@@ -1,0 +1,142 @@
+---
+title: "Data Visualization  "
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r}
+library(shiny)
+library(flexdashboard)
+library(ggplot2)
+```
+
+Sidebar {.sidebar}
+=======================================================================
+
+#### Distribution Parameters 
+
+```{r}
+
+selectInput("Type", label = "Select the Distribution Type",
+            choices = c("Discrete", "Continuous",""), selected = "")
+
+conditionalPanel("input.Type=='Discrete'",
+                 selectInput("DDist", label = "Select the Distribution", choices = c("Discrete Uniform","Bernoulli","Binomial","Negative Binomial","Poisson","Geometric", "Hyper-Geometric",""), selected = ""))
+
+conditionalPanel("input.Type=='Continuous'",
+                 selectInput("CDist",label = "Select the Distribution", choices = c("Normal","Chi-Square","F","Student t","Gamma","Exponential","Beta","Uniform", "Cauchy",""), selected = ""))
+
+conditionalPanel("input.CDist=='Normal'", numericInput("Mu", label = withMathJax(helpText("$$\\mu$$")), value = 0, step = 0.1, min = -Inf, max = Inf), numericInput("Sigma", label = withMathJax(helpText("$$\\sigma^2$$")), value = 1, step = 0.1, min = 0, max = Inf))
+
+conditionalPanel("input.CDist=='Chi-Square' | input.CDist=='Student t'", numericInput("Df", label = "Enter the Degrees of Freedom(d.f)", value = 0, step = 1, min = 0, max = Inf))
+
+selectInput("Out",label = "Select the Output", choices = c("PDF", "CDF","Quantile",""), selected = "")
+
+conditionalPanel("input.Out=='PDF'", selectInput("ProbType", label = c("Probability Type"), choices = c("Equal to", "Less Than or Equal to", "Greater Than or Equal to", "Between Values(Inclusive)", "Extreme Values"),selected = "Equal to"))
+
+conditionalPanel("input.Out=='PDF' & input.ProbType=='Equal to' | input.Out=='PDF' & input.ProbType=='Less Than or Equal to' | input.Out=='PDF' & input.ProbType=='Greater Than or Equal to'", numericInput("Value",label = withMathJax('Enter a Discrete value (\\(x\\)):'), 0))
+
+conditionalPanel("input.Out=='PDF' & input.ProbType=='Between Values(Inclusive)' | input.Out=='PDF' & input.ProbType=='Extreme Values'", numericInput("Value1",label = withMathJax('Enter a Discrete value (\\(x_1\\)):'), 0), numericInput("Value2",label = withMathJax('Enter a Discrete value (\\(x_2\\)):'), 1))
+
+conditionalPanel("input.Out=='CDF'", numericInput("CValue",label = withMathJax('Enter a Discrete value (\\(x\\)):'), 0))
+
+conditionalPanel("input.Out=='Quantile'", numericInput("QValue",label = withMathJax('Enter a Percentile value(between 0 and 1):'), 0.5, step = 0.1))
+
+```
+
+Probability Distribution Calculator
+=======================================================================
+
+Row 
+-------------------------------------
+
+### Plot
+
+```{r}
+#Normal
+
+source("PDF.R")
+source("CDF.R")
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Equal to'", renderPlot({normal_prob_area_plot(lb = input$Value-0.005,ub = input$Value+0.005, input$Mu, sqrt(as.numeric(input$Sigma)))}, height = 600, width = 1000))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Less Than or Equal to'", renderPlot({normal_prob_area_plot(-Inf,ub = input$Value, input$Mu, sqrt(as.numeric(input$Sigma)))}, height = 600, width = 1000))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Greater Than or Equal to'", renderPlot({normal_prob_area_plot(lb = input$Value,Inf, input$Mu, sqrt(as.numeric(input$Sigma)))}, height = 600, width = 1000))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Between Values(Inclusive)'", renderPlot({normal_prob_area_plot(lb = input$Value1,ub = input$Value2, input$Mu, sqrt(as.numeric(input$Sigma)))}, height = 600, width = 1000))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Extreme Values'", renderPlot({normal_prob_area_plot(lb = input$Value1,ub = input$Value2, input$Mu, sqrt(as.numeric(input$Sigma)), extreme = TRUE)}, height = 600, width = 1000))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='CDF'", renderPlot({normal_prob_CDF_plot(lb = -Inf, ub = input$CValue, input$Mu, sqrt(as.numeric(input$Sigma)))}, height = 600, width = 1000))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='Quantile'", renderPlot({normal_prob_area_plot(lb = -Inf, ub = qnorm(as.numeric(input$QValue), mean = input$Mu,sd = sqrt(as.numeric(input$Sigma))), input$Mu, sqrt(as.numeric(input$Sigma)))}, height = 600, width = 1000))
+
+```   
+
+### Formula {data-width=250}
+
+```{r}
+conditionalPanel("input.CDist=='Normal'", withMathJax(
+  h4(strong("Normal Distribution")),
+  helpText('Parameters are $$\\mu \\in (-\\infty, \\infty) 
+           \\\\ \\sigma^2 \\in (0, \\infty) $$'),
+  helpText('Support is $$ x \\in ( -\\infty, \\infty )$$'),
+  helpText('PDF is $$f(x) = \\frac{1}{\\sigma \\sqrt{2\\pi}}e^{-(x-\\mu)/2\\sigma^2}$$'),
+  helpText('CDF is $$F(x) = \\mathbb{P}\\{X \\le x\\} = \\int_{-\\infty}^{x}f(t) \\, dt$$'),
+  helpText('Mean is $$\\mathbb{E}(X) = \\mu$$'),
+  helpText('Variance is $$\\mathbb{V}(X) = \\sigma^2$$')
+))
+```
+
+Row {data-height=150}
+-------------------------------------
+
+### Output {data-width=740}
+  
+```{r}
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Equal to'", renderUI({withMathJax(sprintf("$$\\mathbb{P}(X =  %.03f ) = 0 \\\\ f(X =  %.03f ) = %.04f$$",input$Value,input$Value,dnorm(as.numeric(input$Value), mean = as.numeric(input$Mu), sd = sqrt(as.numeric(input$Sigma)))))}))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Less Than or Equal to'", renderUI({withMathJax(sprintf("The probability that \\(X\\) is Less than or equal to %.03f is $$\\int_{-\\infty}^{%.03f} f(x) \\, dx \\approx %.04f$$",input$Value,input$Value,pnorm(as.numeric(input$Value), mean = as.numeric(input$Mu), sd = sqrt(as.numeric(input$Sigma)))))}))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Greater Than or Equal to'", renderUI({withMathJax(sprintf("The probability that \\(X\\) is Greater than or equal to %.03f is $$1-\\int_{-\\infty}^{%.03f} f(x) \\, dx \\approx %.04f$$",input$Value,input$Value,1-pnorm(as.numeric(input$Value), mean = as.numeric(input$Mu), sd = sqrt(as.numeric(input$Sigma)))))}))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Between Values(Inclusive)'", renderUI({withMathJax(sprintf("The probability that \\(X\\) is between %.03f and %.03f (inclusive) is $$\\int\\limits_{%.03f}^{%.03f} f(x) \\, dx = \\mathbb{P}(X \\leq %.04f) - \\mathbb{P}(X \\leq %.04f) \\approx %.04f$$",input$Value1,input$Value2,input$Value1,input$Value2,input$Value2,input$Value1,pnorm(as.numeric(input$Value2), mean = as.numeric(input$Mu), sd = sqrt(as.numeric(input$Sigma))) - pnorm(as.numeric(input$Value1), mean = as.numeric(input$Mu), sd = sqrt(as.numeric(input$Sigma)))))}))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Extreme Values'", renderUI({withMathJax(sprintf("The probability that \\(X\\) is less than or equal to %.03f or greater than or equal to %.03f is $$\\int\\limits_{\\large{x \\, \\leq \\, %.03f}} f(x) \\, dx + \\int\\limits_{\\large{x \\, \\geq \\, %.03f}} f(x) \\, dx = \\mathbb{P}(X \\leq %.03f) + \\mathbb{P}(X \\geq %.03f) \\approx %.04f$$",input$Value1,input$Value2,input$Value1,input$Value2,input$Value1,input$Value2,1 - pnorm(as.numeric(input$Value2), as.numeric(input$Mu), sqrt(as.numeric(input$Sigma))) + pnorm(as.numeric(input$Value1), as.numeric(input$Mu), sqrt(as.numeric(input$Sigma)))))}))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='CDF'", renderUI({withMathJax(sprintf("$$F(%.03f) = \\mathbb{P}(X \\leq  %.03f ) = %.04f$$",input$CValue,input$CValue,pnorm(as.numeric(input$CValue), 
+                                                 mean = as.numeric(input$Mu),
+                                                 sd = sqrt(as.numeric(input$Sigma)))))}))
+
+conditionalPanel("input.CDist=='Normal' & input.Out=='Quantile'", renderUI({withMathJax(sprintf("\\(\\mathbb{P}(X \\le x) = \\) %.03f corresponds to an \\(x\\) value of %.04f \\( = F^{-1}(%.03f).\\)",input$QValue,qnorm(as.numeric(input$QValue), mean = input$Mu,sd = sqrt(as.numeric(input$Sigma))),input$QValue))}))
+
+```
+
+### Mean 
+```{r}
+conditionalPanel("input.CDist=='Normal'", renderUI({withMathJax(sprintf("$$\\mathbb{E}(X) = \\mu = %.02f$$",input$Mu))}))
+
+``` 
+
+### Variance
+
+```{r}
+conditionalPanel("input.CDist=='Normal' & input.Sigma<=0", renderUI({print(" Normal Distribution is undefined if the Standard Deviation is zero or Negative")}))
+
+conditionalPanel("input.CDist=='Normal' & input.Sigma>0", renderUI({withMathJax(sprintf("$$\\mathbb{V}(X) = \\sigma^2 = %.04f$$",input$Sigma))}))
+
+```
+
+Visualizing Central Limit Theorem
+=====================================     
+
+### Chart 1
+    
+```{r}
+```
