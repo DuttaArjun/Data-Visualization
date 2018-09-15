@@ -14,8 +14,11 @@ library(flexdashboard)
 library(ggplot2)
 ```
 
-Sidebar {.sidebar}
+Probability Distribution Calculator
 =======================================================================
+
+Sidebar {.sidebar}
+-------------------------------------
 
 #### Distribution Parameters 
 
@@ -24,15 +27,30 @@ Sidebar {.sidebar}
 selectInput("Type", label = "Select the Distribution Type",
             choices = c("Discrete", "Continuous",""), selected = "")
 
-conditionalPanel("input.Type=='Discrete'",
-                 selectInput("DDist", label = "Select the Distribution", choices = c("Discrete Uniform","Bernoulli","Binomial","Negative Binomial","Poisson","Geometric", "Hyper-Geometric",""), selected = ""))
+renderUI({
+  switch (input$Type,
+    "Discrete" = selectInput("Dist", label = "Select the Distribution", choices = c("Discrete Uniform","Bernoulli","Binomial","Negative Binomial","Poisson","Geometric", "Hyper-Geometric",""), selected = ""),
+    "Continuous" = selectInput("Dist",label = "Select the Distribution", choices = c("Normal","Chi-Square","F","Student t","Gamma","Exponential","Beta","Uniform",""), selected = "")
+  )
+})
 
-conditionalPanel("input.Type=='Continuous'",
-                 selectInput("CDist",label = "Select the Distribution", choices = c("Normal","Chi-Square","F","Student t","Gamma","Exponential","Beta","Uniform",""), selected = ""))
+conditionalPanel("input.Dist=='Discrete Uniform'", numericInput("a", label = "a", value = 0, step = 1, min = -Inf, max = Inf), numericInput("b", label = "b", value = 1, step = 1, min = -Inf, max = Inf))
 
-conditionalPanel("input.CDist=='Normal'", numericInput("Mu", label = withMathJax(helpText("$$\\mu$$")), value = 0, step = 0.1, min = -Inf, max = Inf), numericInput("Sigma", label = withMathJax(helpText("$$\\sigma^2$$")), value = 1, step = 0.1, min = 0, max = Inf))
+conditionalPanel("input.Dist=='Bernoulli' | input.Dist=='Geometric'", numericInput("p", label = "Enter the probability", value = 0.5, step = 0.1, min = 0, max = 1))
 
-conditionalPanel("input.CDist=='Chi-Square' | input.CDist=='Student t'", numericInput("Df", label = "Enter the Degrees of Freedom(d.f)", value = 0, step = 1, min = 0, max = Inf))
+conditionalPanel("input.Dist=='Binomial' | input.Dist=='Negative Binomial'", numericInput("n", label = "Enter the number of Trials(n)", value = 0, step = 1, min = 1, max = Inf), numericInput("p", label = "Enter the probability", value = 0.5, step = 0.1, min = 0, max = 1))
+
+conditionalPanel("input.Dist=='Poisson'", numericInput("lambda", label = "Enter the probability", value = 5, step = 1, min = 0, max = Inf))
+
+conditionalPanel("input.Dist=='Hyper-Geometric'", numericInput("N", label = "N", value = 0, step = 1, min = 0, max = Inf), numericInput("n", label = "n", value = 1, step = 1, min = 0, max = Inf),numericInput("m", label = "m", value = 1, step = 1, min = 0, max = Inf))
+
+conditionalPanel("input.Dist=='Normal'", numericInput("Mu", label = withMathJax(helpText("$$\\mu$$")), value = 0, step = 0.1, min = -Inf, max = Inf), numericInput("Sigma", label = withMathJax(helpText("$$\\sigma^2$$")), value = 1, step = 0.1, min = 0, max = Inf))
+
+conditionalPanel("input.Dist=='F' | input.Dist=='Gamma' | input.Dist=='Beta'", numericInput("d1", label = withMathJax(helpText("$$\\mu$$")), value = 0, step = 0.1, min = -Inf, max = Inf), numericInput("d2", label = withMathJax(helpText("$$\\sigma^2$$")), value = 1, step = 0.1, min = 0, max = Inf))
+
+conditionalPanel("input.Dist=='Chi-Square' | input.Dist=='Student t' | input.Dist=='Exponential'", numericInput("v", label = "Enter the Degrees of Freedom(d.f)", value = 0, step = 1, min = 0, max = Inf))
+
+conditionalPanel("input.Dist=='Uniform'", numericInput("a", label = "Enter the value of a", value = 0, step = 0.1, min = -Inf, max = Inf), numericInput("b", label = "Enter the value of b", value = 1, step = 0.1, min = 0, max = Inf))
 
 selectInput("Out",label = "Select the Output", choices = c("PDF", "CDF","Quantile",""), selected = "")
 
@@ -47,9 +65,6 @@ conditionalPanel("input.Out=='CDF'", numericInput("CValue",label = withMathJax('
 conditionalPanel("input.Out=='Quantile'", numericInput("QValue",label = withMathJax('Enter a Percentile value(between 0 and 1):'), 0.5, step = 0.1))
 
 ```
-
-Probability Distribution Calculator
-=======================================================================
 
 Row 
 -------------------------------------
@@ -85,7 +100,7 @@ source("Formulas.R")
 
 renderUI({
   if (input$Type=="Discrete") {
-    switch (input$DDist,
+    switch (input$Dist,
       "Bernoulli" = BernForm,
       "Discrete Uniform" = DiscUnifForm,
       "Binomial" = BinForm,
@@ -95,8 +110,8 @@ renderUI({
       "Hyper-Geometric" = HyperGeomForm
     )
     
-  }else {
-    switch (input$CDist,
+  }else if (input$Type=="Continuous"){
+    switch (input$Dist,
       "Normal" = NormForm,
       "Chi-Square" = ChiForm,
       "F" = FForm,
@@ -106,7 +121,8 @@ renderUI({
       "Beta" = BetaForm,
       "Uniform" = ContUnifForm
     )
-    
+  } else {
+    return()
   }
 })
 ```
@@ -117,6 +133,24 @@ Row {data-height=100}
 ### Output {data-width=740}
   
 ```{r}
+
+renderUI({
+  if(input$Out=="PDF" & input$Probtype=="Equal to"){
+    switch (input$Dist,
+      "Normal" = 
+    )
+  } else if(input$Out=="PDF" & input$Probtype=="Less Than or Equal to"){
+    
+  } else if(input$Out=="PDF" & input$Probtype=="Greater Than or Equal to"){
+    
+  } else if(input$Out=="PDF" & input$Probtype=="Between Values(Inclusive)"){
+    
+  } else if(input$Out=="PDF" & input$Probtype=="Extreme Values"){
+    
+  } 
+})
+
+
 
 conditionalPanel("input.CDist=='Normal' & input.Out=='PDF' & input.ProbType=='Equal to'", renderUI({withMathJax(sprintf("$$\\mathbb{P}(X =  %.03f ) = 0 \\\\ f(X =  %.03f ) = %.04f$$",input$Value,input$Value,dnorm(as.numeric(input$Value), mean = as.numeric(input$Mu), sd = sqrt(as.numeric(input$Sigma)))))}))
 
@@ -141,18 +175,25 @@ conditionalPanel("input.CDist=='Normal' & input.Out=='Quantile'", renderUI({with
 
 renderUI({
   if (input$Type == "Discrete") {
-    switch (input$DDist,
-      "Discrete Uniform" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = \\frac{a+b}{2} = \\frac{%.03f +              %.03f}{2} = %.04f$$", input$a, input$b, (input$a + input$b)/2)),
-      "Bernoulli" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = p = %.04f$$", input$p)),
-      "Binomial" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = np = (%.03f) (%.03f) = %.04f$$",                     input$n, input$p, (input$n * input$p))),
-      "Negative Binomial" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = \\frac{r}{p} = \\frac{%d}{%0.3f} =          %.04f$$",input$numSuccesses,input$pNeg,(input$numSuccesses / input$pNeg))),
-      "Poisson" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = \\lambda = %.04f$$", input$lambda)),
-      "Geometric" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = \\frac{1}{p} = \\frac{1}{%.03f} =                   %.04f$$",input$pBG,(1 / input$pBG))),
-      "Hyper-Geometric" = withMathJax(sprintf("Mean is $$\\mathbb{E}(X) = \\frac{nm}{N} = \\frac{%d \\cdot              %d}{%d} = %.04f$$",input$numTrials,input$favBalls,input$numEvents,(input$numTrials * input$favBalls /            input$numEvents)))
+    switch (input$Dist,
+      "Discrete Uniform" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{a+b}{2} = \\frac{%.03f + %.03f}{2} = %.04f$$", input$a, input$b, (input$a + input$b)/2)),
+      "Bernoulli" = withMathJax(sprintf("$$\\mathbb{E}(X) = p = %.04f$$", input$p)),
+      "Binomial" = withMathJax(sprintf("$$\\mathbb{E}(X) = np = (%.03f) (%.03f) = %.04f$$",                     input$n, input$p, (input$n * input$p))),
+      "Negative Binomial" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{r}{p} = \\frac{%d}{%0.3f} =          %.04f$$",input$n,input$p,(input$n / input$p))),
+      "Poisson" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\lambda = %.04f$$", input$lambda)),
+      "Geometric" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{1}{p} = \\frac{1}{%.03f} =                   %.04f$$",input$p,(1 / input$p))),
+      "Hyper-Geometric" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{nm}{N} = \\frac{%d \\cdot              %d}{%d} = %.04f$$",input$N,input$n,input$m,(input$N * input$n /input$m)))
     )
-  } else {
-    switch (input$CDist,
-      "Normal" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\mu = %.02f$$",input$Mu))
+  } else if (input$Type == "Continuous"){
+    switch (input$Dist,
+      "Normal" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\mu = %.02f$$",input$Mu)),
+      "Chi-Square" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\nu = %.04f$$",input$v)),
+      "F" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{d_2}{d_2 - 2} =                \\frac{%.03f}{%.03f - 2} = %.04f$$",input$d2,input$d2,input$d2/(input$d2 - 2))),
+      "Student t" = withMathJax(sprintf("$$\\mathbb{E}(X) = 0$$")),
+      "Gamma" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\alpha \\beta = %.03f \\cdot %.03f  =  %.04f$$",        input$d1,input$d2,(input$d1 * input$d2))),
+      "Exponential" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\beta = %.04f$$",input$v)),
+      "Beta" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{\\alpha}{\\alpha + \\beta} =                      \\frac{%.03f}{%.03f + %.03f} = %.04f$$",input$d1,input$d1,input$d2,input$d1/(input$d1 + input$d2))),
+      "Uniform" = withMathJax(sprintf("$$\\mathbb{E}(X) = \\frac{\\theta_1+\\theta_2}{2} = \\frac{%.03f +        %.03f}{2} = %.04f$$",input$a,input$b,(input$a + input$b)/2))
     )
   }
 })
@@ -165,24 +206,103 @@ renderUI({
 
 renderUI({
   if (input$Type == "Discrete") {
-    switch (input$DDist,
-            
+    switch (input$Dist,
+      "Discrete Uniform" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\frac{(b - a +1)^2 - 1}{12} =           \\frac{(%.03f - %.03f + 1)^2 - 1}{12} = %.04f$$",input$b,input$a,((input$b - input$a + 1)^2 -1)/12)),
+      "Bernoulli" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = p(1-p) = (%.03f)(1-%.03f) = %.04f$$",           input$p,input$p,(input$p*(1-input$p)))),
+      "Binomial" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = np(1-p) = (%d)(%.03f)(1-%.03f) = %.04f$$",        input$n,input$p,input$p,(input$n * input$p * (1-input$p)))),
+      "Negative Binomial" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\frac{r(1-p)}{p^2} = \\frac{%d(1-%.03f)}{(%.03f)^2} = %.04f$$",
+                                          input$n,
+                                          input$p,
+                                          input$p,
+                                          ( (input$n * (1-input$p) ) / ( (input$p)^2 ) )
+             )),
+      "Poisson" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\lambda = %.04f$$",
+                                         input$lambda
+             )),
+      "Geometric" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\frac{1-p}{p^2} =                              \\frac{1-%.03f}{(%.03f)^2} = %.04f$$",input$p,input$p,((1-input$p) / (input$p)^2))),
+      "Hyper-Geometric" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) =                                           \\frac{N-n}{N-1}\\left(\\frac{nm}{N}\\right)\\left( 1-\\frac{m}{N} \\right) =                                    \\frac{%d-%d}{%d-1}\\left(\\frac{%d \\cdot %d}{%d}\\right)\\left( 1-\\frac{%d}{%d} \\right)  =                   %.04f$$",input$numEvents,input$numTrials,input$numEvents,input$numTrials,input$favBalls,input$numEvents,input$favBalls,input$numEvents,((input$numEvents - input$numTrials)/(input$numEvents-1)) *((input$numTrials *input$favBalls)/(input$numEvents))*(1- input$favBalls/(input$numEvents))))
     )
-  } else {
-    switch (input$CDist,
-      "Normal" = withMathJax(sprintf("$$\\mathbb{V}(X) = \\sigma^2 = %.04f$$",input$Sigma))
+  } else if (input$Type == "Continuous") {
+    switch (input$Dist,
+             "Beta" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\frac{\\alpha + \\beta}{(\\alpha + \\beta)^2(\\alpha + \\beta + 1)} 
+                                          = \\frac{%.03f + %.03f}{(%.03f + %.03f)^2(%.03f + %.03f + 1)} = %.04f$$",
+                                          input$d1,
+                                          input$d2,
+                                          input$d1,
+                                          input$d2,
+                                          input$d1,
+                                          input$d2,
+                                          (input$d1 + input$d2)/((input$d1 + input$d2)^2 * (input$d1 + input$d2 + 1))
+             )),
+             
+             "Chi-Square" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = 2\\nu = 2 * %.03f = %.04f$$",
+                                           input$v,
+                                           2 * input$v
+             )), 
+             
+             "Exponential" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\beta^2 = %.04f$$",
+                                         input$v^2
+             )),
+             
+             "F" = withMathJax(sprintf("Variance (for \\( d_2 > 4\\) ) is $$\\mathbb{V}(X) = \\frac{2 {d_2}^2 (d_1 + d_2 - 2)}{d_1 (d_2 - 2)^2 (d_2 - 4)}
+                                       = \\frac{2 * %.02f^2 (%.02f + %.02f - 2)}{%.02f (%.02f - 2)^2 (%.02f - 4)} = %.04f$$",
+                                       input$d2,
+                                       input$d1,
+                                       input$d2,
+                                       input$d1,
+                                       input$d2,
+                                       input$d2,
+                                       (2 * input$d2^2  * (input$d1 + input$d2 - 2))/(input$d1 * (input$d2 - 2)^2 * (input$d2 - 4))
+             )),
+             
+             "Gamma" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\alpha \\beta^2 = %d (%d)^2  =  %.04f$$",
+                                         input$d1,
+                                         input$d2,
+                                         (input$d1 * input$d2^2)
+             )),
+             
+             "Normal" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\sigma^2 = %.04f$$",
+                                          input$Sigma
+             )), 
+             
+             "Student t" = withMathJax(sprintf("Variance (for \\( \\nu > 2\\) ) is $$\\mathbb{V}(X) = \\frac{\\nu}{\\nu - 2} = \\frac{%.03f}{%.03f - 2} = %.04f$$",
+                                       input$v,
+                                       input$v,
+                                       input$v/(input$v-2)
+             )), 
+             
+             "Uniform" = withMathJax(sprintf("Variance is $$\\mathbb{V}(X) = \\frac{(\\theta_2-\\theta_1)^2}{12} = \\frac{(%d - %d)^2}{12} = %.04f$$",
+                                          input$b,
+                                          input$a,
+                                          (input$b - input$a)^2 /12
+             )),
     )
   }
 })
-
-conditionalPanel("input.CDist=='Normal' & input.Sigma<=0", renderUI({print(" Normal Distribution is undefined if the Standard Deviation is zero or Negative")}))
-
-conditionalPanel("input.CDist=='Normal' & input.Sigma>0", renderUI({withMathJax(sprintf("$$\\mathbb{V}(X) = \\sigma^2 = %.04f$$",input$Sigma))}))
 
 ```
 
 Visualizing Central Limit Theorem
 =====================================     
+
+Sidebar {.sidebar}
+-------------------------------------
+
+#### Distribution Parameters
+
+```{r}
+selectInput("T", label = "Select the Distribution Type",
+            choices = c("Discrete", "Continuous",""), selected = "")
+
+conditionalPanel("input.T=='Discrete'",selectInput("DD", label = "Select the Distribution", choices = c("Discrete Uniform","Bernoulli","Binomial","Negative Binomial","Poisson","Geometric", "Hyper-Geometric",""), selected = ""))
+
+conditionalPanel("input.T=='Continuous'",selectInput("CD",label = "Select the Distribution", choices = c("Normal","Chi-Square","F","Student t","Gamma","Exponential","Beta","Uniform",""), selected = ""))
+
+```
+
+
+Row 
+-------------------------------------
 
 ### Chart 1
     
